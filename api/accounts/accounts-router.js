@@ -1,6 +1,6 @@
 const router = require('express').Router();
 const accountsModel = require('./accounts-model');
-const accountsMiddleware = require('./accounts-middleware');
+const { checkAccountPayload, checkAccountNameUnique, checkAccountId } = require('./accounts-middleware');
 
 router.get('/', (req, res, next) => {
   // DO YOUR MAGIC
@@ -10,29 +10,53 @@ router.get('/', (req, res, next) => {
     })
 })
 
-router.get('/:id', (req, res, next) => {
+router.get('/:id', checkAccountId, (req, res, next) => {
   // DO YOUR MAGIC
-  return
+  accountsModel.getById(req.params.id)
+    .then(account => {
+      res.status(200).json(account[0])
+    })
 })
 
-router.post('/', (req, res, next) => {
+router.post('/', checkAccountPayload, checkAccountNameUnique, (req, res, next) => {
   // DO YOUR MAGIC
-  return
+  accountsModel.create(req.account)
+    .then(createdId => {
+      if(createdId){
+        accountsModel.getById(createdId)
+          .then(account => {
+            res.status(201).json(account[0]);
+          })
+      }
+    })
+    .catch(err => next(err))
 })
 
-router.put('/:id', (req, res, next) => {
+router.put('/:id', checkAccountPayload, checkAccountNameUnique, checkAccountId, (req, res, next) => {
   // DO YOUR MAGIC
-  return
+  accountsModel.updateById(req.params.id, req.account)
+    .then(updatedAcc => {
+      if(updatedAcc !== null){
+        res.status(200).json(updatedAcc[0]);
+      }
+    })
 });
 
-router.delete('/:id', (req, res, next) => {
+router.delete('/:id', checkAccountId, (req, res, next) => {
   // DO YOUR MAGIC
-  return
+  accountsModel.deleteById(req.params.id)
+    .then(updatedAcc => {
+      res.status(200).json(req.accountForDeletion);
+    })
 })
 
 router.use((err, req, res, next) => { // eslint-disable-line
   // DO YOUR MAGIC
-  return
+  console.log(err);
+  res.status(err.status || 500).json({
+    message: err.message,
+    stack: err.stack
+  })
 })
 
 module.exports = router;
